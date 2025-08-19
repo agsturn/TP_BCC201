@@ -9,7 +9,7 @@
 
 int main() {
     srand(time(NULL)); // Inicializa o gerador de números aleatórios
-
+    void menu(void);
     // Criação do Jogo de teste
     Jogo jogo_teste;
     jogo_teste.tamanho_tab = TAM;

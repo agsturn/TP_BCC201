@@ -13,7 +13,7 @@
 #include <ctype.h>
 
 // Protótipos das funções do menu
-
+void menu(void);
 
 
 #endif // __MENU_H__
