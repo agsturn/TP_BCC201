@@ -1,5 +1,4 @@
 // Ana Gabriela Gomes Lopes Pereira - 25.1.4119
-// Arquivo com as implementações das funções utilizadas no jogo
 
 #include "struct.h"
 #include "exemplo.h"
@@ -12,20 +11,17 @@
 
 //FUNÇÕES BÁSICAS 
 // Função 1: Centraliza qualquer texto dentro de uma largura definida
-void centralizar(const char* texto) {
+void centralizar(char *texto){
     int largura_terminal = 100;
-    int comprimento = (int)strlen(texto); //calcula o tamanho do texto
+    int comprimento = strlen(texto);
     int espacos = (largura_terminal - comprimento) / 2;
 
-    if (espacos < 0){ //caso for maior que o tamanho do terminal,ele não vai imprimrir 
-        espacos = 0;
-    }
+    if (espacos < 0) espacos = 0;
 
-    for (int i = 0; i < espacos; i++){ //impressão dos espaços
-         printf(" ");
+    for (int i = 0;i < espacos; i++){
+        printf(" ");
     }
-
-    printf("%s\n", texto); //impressão do texto e \n
+    printf("%s\n", texto); // <--- imprime o texto
 }
 
 // Função 2:Tela inicial         
@@ -45,74 +41,67 @@ void telaInicial() {
 }
 
 // Função 3: Criar matriz
-int** criar_matriz(int n) {
-    int **matriz = malloc(n * sizeof(int *)); // Aloca uma matriz de n linhas
-    if (!matriz) 
-        return NULL; // Verifica se a alocação falhou
+int **criar_matriz(int n) {
+    int **matriz = malloc(n * sizeof(int*));
+    if (matriz == 0) 
+        return NULL;
 
     for (int i = 0; i < n; i++) {
-        matriz[i] = malloc(n * sizeof(int)); // Aloca cada linha com n inteiros
-        if (!matriz[i]) { // Se falhar, libera o que já tinha sido alocado
-            for (int k = 0; k < i; k++) free(matriz[k]);
+        matriz[i] = malloc(n * sizeof(int));
+        if (matriz[i] == 0) {
+            for (int k = 0; k < i; k++){
+                free(matriz[k]);
+            }
             free(matriz);
             return NULL;
         }
         for (int j = 0; j < n; j++) 
-            matriz[i][j] = 0; // Inicializa com 0
+            matriz[i][j] = 0;
     }
-    return matriz; // Retorna a matriz criada
+    return matriz;
 }
-
 
 // Função 4: Imprimir matriz
 void imprimir_matriz(Jogo *j) {
     int n = j->tamanho_tab;   
-    char cel[8];// armazenar a string de cada célula
+    char cel[8];
 
-    // Imprime o cabeçalho das colunas com números
     printf("   ");
     for (int k = 0; k < n; k++) 
         printf(" %d  ", k + 1);
     printf("\n");
 
-    // Percorre todas as linhas do tabuleiro
     for (int i = 0; i < n; i++) {
-        // Desenha a linha horizontal superior ou do meio, dependendo da linha
         if (i == 0) 
-            printf(TAB_TL);   // Canto superior esquerdo
+            printf(TAB_TL);
         else 
-            printf(TAB_ML);   // Linha do meio à esquerda
+            printf(TAB_ML);
 
-        // Desenha as divisões horizontais das células
         for (int k = 0; k < n; k++) {
-            printf(TAB_HOR TAB_HOR TAB_HOR);  // Linha horizontal da célula
+            printf(TAB_HOR TAB_HOR TAB_HOR);
             if (k < n - 1) 
-                printf(TAB_MJ);   // Junção entre células
+                printf(TAB_MJ);
             else if (i == 0) 
-                printf(TAB_TR);   // Canto superior direito
+                printf(TAB_TR);
             else if (i == n - 1) 
-                printf(TAB_BR);   // Canto inferior direito (será refeito depois)
+                printf(TAB_BR);
             else 
-                printf(TAB_MR);   // Linha do meio à direita
+                printf(TAB_MR);
         }
         printf("\n");
 
-        // Imprime a letra da linha (A, B, C, ...)
         printf("%c ", 'A' + i);
 
-        // Percorre todas as colunas da linha atual
         for (int k = 0; k < n; k++) {
-            int v = j->matriz_tab[i][k];  // Valor da célula atual
+            int v = j->matriz_tab[i][k];
 
-            // Formata o valor da célula
             if (v == 0) 
-                sprintf(cel, "   ");      // Espaço vazio
+                sprintf(cel, "   ");
             else 
-                sprintf(cel, "%2d ", v);  // Número preenchido
+                sprintf(cel, "%2d ", v);
 
-            printf(TAB_VER);  // Desenha a borda vertical da célula
+            printf(TAB_VER);
 
-            // Aplica cores diferentes de acordo com o valor da célula
             if (v == 2) 
                 printf("%s%s%s", ANSI_COLOR_RED, cel, ANSI_RESET);
             else if (v == 4) 
@@ -126,19 +115,18 @@ void imprimir_matriz(Jogo *j) {
             else if (v == 64) 
                 printf("%s%s%s", ANSI_COLOR_CYAN, cel, ANSI_RESET);
             else 
-                printf("%s", cel);  // Sem cor para valores maiores
+                printf("%s", cel);
         }
-        printf(TAB_VER "\n");  // Fecha a linha com a borda direita
+        printf(TAB_VER "\n");
 
-        // Se for a última linha, desenha a linha inferior do tabuleiro
         if (i == n - 1) {
-            printf(TAB_BL);  // Canto inferior esquerdo
+            printf(TAB_BL);
             for (int k = 0; k < n; k++) {
-                printf(TAB_HOR TAB_HOR TAB_HOR);  // Linha horizontal
+                printf(TAB_HOR TAB_HOR TAB_HOR);
                 if (k < n - 1) 
-                    printf(TAB_BJ);   // Junção inferior entre células
+                    printf(TAB_BJ);
                 else 
-                    printf(TAB_BR);   // Canto inferior direito
+                    printf(TAB_BR);
             }
             printf("\n");
         }
@@ -147,278 +135,231 @@ void imprimir_matriz(Jogo *j) {
 
 // Função 5: Liberar matriz
 void liberar_matriz(int **matriz, int n) {
-    // Percorre cada linha da matriz e libera a memória alocada
     for (int i = 0; i < n; i++) 
-        free(matriz[i]);  // Libera cada linha
+        free(matriz[i]);
 
-    free(matriz);// Libera o ponteiro da matriz em si
+    free(matriz);
 }
 
-// Função 6: Colocar números aleatórios
+//Função 6:Coloca o numero aleatorio
+void n_aleatorio(Jogo *jogo_atual) {
+    int n = jogo_atual->tamanho_tab;
+    int pecas;
+
+    if (n == 6) pecas = 2;
+    else pecas = 1;
+
+    for (int p = 0; p < pecas; p++) {
+        int linha, coluna;
+        int valor;
+        int probabilidade = rand() % 100;
+
+        if (n == 4) {
+            if (probabilidade < 90) 
+                valor = 2;
+            else valor = 4;
+        } else if (n == 5) {
+            if (probabilidade < 85) 
+                valor = 2;
+            else valor = 4;
+        } else {
+            if (probabilidade < 80) valor = 2;
+            else valor = 4;
+        }
+
+        do {
+            linha = rand() % n;
+            coluna = rand() % n;
+        } while (jogo_atual->matriz_tab[linha][coluna] != 0);
+
+        jogo_atual->matriz_tab[linha][coluna] = valor;
+    }
+}
 
 // Função 7: Copiar matriz
-int** copiar_matriz(int **matriz, int tamanho) {
+int **copiar_matriz(int **matriz, int tamanho) {
     int **copia = criar_matriz(tamanho);
-
-    // Copia cada elemento da matriz original para a nova matriz
-    for (int i = 0; i < tamanho; i++)
-        for (int j = 0; j < tamanho; j++)
+    for (int i = 0; i < tamanho; i++){
+        for (int j = 0; j < tamanho; j++){
             copia[i][j] = matriz[i][j];
-
-    // Retorna a matriz copiada
+        }
+    }
     return copia;
 }
 
 //MOVIMENTO E PONTUAÇÃO
-// Função 8:Movimenta o tabuleiro 
-int mover(Jogo *jogo, char direcao) {
-    int **tab = jogo->matriz_tab; 
-    int n = jogo->tamanho_tab;    
-    int movimento = 0; // indica se houve movimento
-
-    if (direcao == 'a') { // mover para a esquerda
-        for (int i = 0; i < n; i++) {       
-            for (int j = 1; j < n; j++) {   // percorre cada coluna a partir da segunda
-                if (tab[i][j] != 0) {       
-                    int k = j;
-                    // move a peça enquanto a célula à esquerda estiver vazia
-                    while (k > 0 && tab[i][k-1] == 0) {
-                        tab[i][k-1] = tab[i][k];
-                        tab[i][k] = 0;
-                        k--;
-                        movimento = 1; // marcou que houve movimento
-                    }
-                    // combina com a peça à esquerda se tiver o mesmo valor
-                    if (k > 0 && tab[i][k-1] == tab[i][k]) {
-                        tab[i][k-1] *= 2; // dobra o valor
-                        tab[i][k] = 0;    // limpa a célula original
-                        adicionar_pontos(jogo, tab[i][k-1]); // soma pontos
-                        movimento = 1;
-                    }
-                }
-            }
-        }
-    } 
-    else if (direcao == 'd') { // mover para a direita
-        for (int i = 0; i < n; i++) {        
-            for (int j = n-2; j >= 0; j--) {  // percorre da penúltima coluna para a esquerda
-                if (tab[i][j] != 0) {
-                    int k = j;
-                    // move a peça enquanto a célula à direita estiver vazia
-                    while (k < n-1 && tab[i][k+1] == 0) {
-                        tab[i][k+1] = tab[i][k];
-                        tab[i][k] = 0;
-                        k++;
-                        movimento = 1;
-                    }
-                    // combina com a peça à direita se tiver o mesmo valor
-                    if (k < n-1 && tab[i][k+1] == tab[i][k]) {
-                        tab[i][k+1] *= 2;
-                        tab[i][k] = 0;
-                        adicionar_pontos(jogo, tab[i][k+1]);
-                        movimento = 1;
-                    }
-                }
-            }
-        }
-    } 
-    else if (direcao == 'w') { // mover para cima
-        for (int j = 0; j < n; j++) {          
-            for (int i = 1; i < n; i++) { // percorre cada linha a partir da segunda
-                if (tab[i][j] != 0) {
-                    int k = i;
-                    // move a peça enquanto a célula acima estiver vazia
-                    while (k > 0 && tab[k-1][j] == 0) {
-                        tab[k-1][j] = tab[k][j];
-                        tab[k][j] = 0;
-                        k--;
-                        movimento = 1;
-                    }
-                    // combina com a peça acima se tiver o mesmo valor
-                    if (k > 0 && tab[k-1][j] == tab[k][j]) {
-                        tab[k-1][j] *= 2;
-                        tab[k][j] = 0;
-                        adicionar_pontos(jogo, tab[k-1][j]);
-                        movimento = 1;
-                    }
-                }
-            }
-        }
-    } 
-    else if (direcao == 's') { // mover para baixo
-        for (int j = 0; j < n; j++) {
-            for (int i = n-2; i >= 0; i--) {  // percorre da penúltima linha para cima
-                if (tab[i][j] != 0) {
-                    int k = i;
-                    // move a peça enquanto a célula abaixo estiver vazia
-                    while (k < n-1 && tab[k+1][j] == 0) {
-                        tab[k+1][j] = tab[k][j];
-                        tab[k][j] = 0;
-                        k++;
-                        movimento = 1;
-                    }
-                    // combina com a peça abaixo se tiver o mesmo valor
-                    if (k < n-1 && tab[k+1][j] == tab[k][j]) {
-                        tab[k+1][j] *= 2;
-                        tab[k][j] = 0;
-                        adicionar_pontos(jogo, tab[k+1][j]);
-                        movimento = 1;
-                    }
-                }
-            }
-        }
+int mover(Jogo *jogo,char direcao){
+    switch(direcao){
+        case 'a': return mover_esquerda(jogo);
+        case 'd': return mover_direita(jogo);
+        case 'w': return mover_cima(jogo);
+        case 's': return mover_baixo(jogo);
+        default: return 0;
     }
-
-    return movimento; // retorna se houve ou não movimento
 }
 
-// Função 9: Adicionar nova peça aleatória
-void nova_peca(Jogo *jogo) {
-    int vazios[36][2], qt_vazios = 0;
-    for (int i = 0; i < jogo->tamanho_tab; i++) {
-        for (int j = 0; j < jogo->tamanho_tab; j++) {
-            if (jogo->matriz_tab[i][j] == 0) {
-                vazios[qt_vazios][0] = i;
-                vazios[qt_vazios][1] = j;
-                qt_vazios++;
-            }
-        }
-    }
-    if (qt_vazios == 0) return;
+int mover_direita(Jogo *jogo){
+    int n = jogo->tamanho_tab;
+    int movimento = 0;
 
-    int pos = rand() % qt_vazios;
-    int valor = (rand() % 100 < 90) ? 2 : 4;
-    jogo->matriz_tab[vazios[pos][0]][vazios[pos][1]] = valor;
+    for(int i = 0; i < n; i++){
+        int houve_movimento = 0;
+        int linha[n];
+
+        for(int j = 0; j < n; j++)
+            linha[j] = jogo->matriz_tab[i][n-1-j];
+
+        movimento_nao_guloso(linha, n, &(jogo->pontos), &houve_movimento);
+
+        for(int j = 0; j < n; j++)
+            jogo->matriz_tab[i][n-1-j] = linha[j];
+
+        if(houve_movimento) movimento = 1;
+    }
+
+    return movimento;
 }
 
-//Função 10:Atualiza a pontuação somando o valor 
-void adicionar_pontos(Jogo *jogo, int valor) {
-    jogo->pontos += valor;
+int mover_esquerda(Jogo *jogo){
+    int n = jogo->tamanho_tab;
+    int movimento = 0;
+
+    for(int i = 0; i < n; i++){
+        int houve_movimento = 0;
+        int linha[n];
+
+        for(int j = 0; j < n; j++)
+            linha[j] = jogo->matriz_tab[i][j];
+
+        movimento_nao_guloso(linha, n, &(jogo->pontos), &houve_movimento);
+
+        for(int j = 0; j < n; j++)
+            jogo->matriz_tab[i][j] = linha[j];
+
+        if(houve_movimento) movimento = 1;
+    }
+
+    return movimento;
 }
 
-//Função 11: Movimento “não-guloso”
-int movimento_nao_guloso(Jogo *jogo, char direcao) {
-    int **matriz = jogo->matriz_tab;  
-    int tamanho = jogo->tamanho_tab;  
-    int movimento_valido = 0;        
+int mover_cima(Jogo *jogo){
+    int n = jogo->tamanho_tab;
+    int movimento = 0;
 
-    // Matriz auxiliar para marcar peças já combinadas nesta jogada
-    int combinada[tamanho][tamanho];
-    for (int i = 0; i < tamanho; i++)
-        for (int j = 0; j < tamanho; j++)
-            combinada[i][j] = 0;  // nenhuma peça foi combinada ainda
+    for(int j = 0; j < n; j++){
+        int houve_movimento = 0;
+        int coluna[n];
 
-    // Movimentar para a esquerda
-    if (direcao == 'a') {
-        for (int i = 0; i < tamanho; i++) {
-            for (int j = 1; j < tamanho; j++) { // percorre da 2ª até a última coluna
-                if (matriz[i][j] != 0) {        // se a célula não estiver vazia
-                    int k = j;
+        for(int i = 0; i < n; i++)
+            coluna[i] = jogo->matriz_tab[i][j];
 
-                    // Move a peça enquanto houver espaço vazio à esquerda
-                    while (k > 0 && matriz[i][k-1] == 0) {
-                        matriz[i][k-1] = matriz[i][k];  // move a peça
-                        matriz[i][k] = 0;               // limpa posição antiga
-                        k--;
-                        movimento_valido = 1;           // movimento aconteceu
-                    }
+        movimento_nao_guloso(coluna, n, &(jogo->pontos), &houve_movimento);
 
-                    // Combina peças iguais não combinadas ainda
-                    if (k > 0 && matriz[i][k-1] == matriz[i][k] &&
-                        !combinada[i][k-1] && !combinada[i][k]) {
-                        matriz[i][k-1] *= 2;         // combina
-                        matriz[i][k] = 0;            // limpa posição antiga
-                        combinada[i][k-1] = 1;       // marca como combinada
-                        movimento_valido = 1;        // movimento/combinação ocorreu
-                    }
-                }
+        for(int i = 0; i < n; i++)
+            jogo->matriz_tab[i][j] = coluna[i];
+
+        if(houve_movimento) movimento = 1;
+    }
+
+    return movimento;
+}
+
+int mover_baixo(Jogo *jogo){
+    int n = jogo->tamanho_tab;
+    int movimento = 0;
+
+    for(int j = 0; j < n; j++){
+        int houve_movimento = 0;
+        int coluna[n];
+
+        for(int i = 0; i < n; i++)
+            coluna[i] = jogo->matriz_tab[n-1-i][j];
+
+        movimento_nao_guloso(coluna, n, &(jogo->pontos), &houve_movimento);
+
+        for(int i = 0; i < n; i++)
+            jogo->matriz_tab[n-1-i][j] = coluna[i];
+
+        if(houve_movimento) movimento = 1;
+    }
+
+    return movimento;
+}
+
+// Função 13:Adicionar pontos
+void adicionar_pontos(Jogo *jogo, int pontos) {
+    jogo->pontos += pontos;
+}
+
+//Função 14:Movimento não guloso
+void movimento_nao_guloso(int *linha, int tamanho, int *pontuacao, int *houve_movimento) {
+    int temporario[tamanho];
+    int combinada[tamanho];
+    for (int i = 0; i < tamanho; i++) {
+        temporario[i] = linha[i];
+        combinada[i] = 0;
+    }
+
+    for (int i = 0; i < tamanho; i++) {
+        if (linha[i] == 0) continue;
+        int k = i;
+        while (k > 0 && linha[k-1] == 0) {
+            linha[k-1] = linha[k];
+            linha[k] = 0;
+            k--;
+        }
+    }
+
+    for (int i = 0; i < tamanho - 1; i++) {
+        if (linha[i] != 0 && linha[i] == linha[i+1] && !combinada[i] && !combinada[i+1]) {
+            linha[i] *= 2;
+            linha[i+1] = 0;
+            combinada[i] = 1;
+            *pontuacao += linha[i];
+        }
+    }
+
+    for (int i = 0; i < tamanho; i++) {
+        if (linha[i] == 0) continue;
+        int k = i;
+        while (k > 0 && linha[k-1] == 0) {
+            linha[k-1] = linha[k];
+            linha[k] = 0;
+            k--;
+        }
+    }
+
+    *houve_movimento = 0;
+    for (int i = 0; i < tamanho; i++) {
+        if (linha[i] != temporario[i]) {
+            *houve_movimento = 1;
+            break;
+        }
+    }
+}
+
+// Função 15: Verificar movimento, vitória ou derrota
+int verificar_jogo(Jogo *jogo){
+    int n = jogo->tamanho_tab;
+    int movimento_possivel = 0;
+
+    for(int i = 0; i < n; i++){
+        for(int j = 0; j < n; j++){
+            if(jogo->matriz_tab[i][j] == 0){
+                movimento_possivel = 1; // tem espaço vazio
+            }
+
+            // verifica se pode combinar com o de baixo
+            if(i < n-1 && jogo->matriz_tab[i][j] == jogo->matriz_tab[i+1][j]){
+                movimento_possivel = 1;
+            }
+
+            // verifica se pode combinar com o da direita
+            if(j < n-1 && jogo->matriz_tab[i][j] == jogo->matriz_tab[i][j+1]){
+                movimento_possivel = 1;
             }
         }
     }
 
-    // Movimentar para a direita
-    else if (direcao == 'd') {
-        for (int i = 0; i < tamanho; i++) {
-            for (int j = tamanho-2; j >= 0; j--) { // percorre da penúltima coluna até a primeira
-                if (matriz[i][j] != 0) {
-                    int k = j;
-
-                    // Move a peça enquanto houver espaço à direita
-                    while (k < tamanho-1 && matriz[i][k+1] == 0) {
-                        matriz[i][k+1] = matriz[i][k];
-                        matriz[i][k] = 0;
-                        k++;
-                        movimento_valido = 1;
-                    }
-
-                    // Combina peças iguais não combinadas
-                    if (k < tamanho-1 && matriz[i][k+1] == matriz[i][k] &&
-                        !combinada[i][k+1] && !combinada[i][k]) {
-                        matriz[i][k+1] *= 2;
-                        matriz[i][k] = 0;
-                        combinada[i][k+1] = 1;
-                        movimento_valido = 1;
-                    }
-                }
-            }
-        }
-    }
-
-    // Movimentar para cima
-    else if (direcao == 'w') {
-        for (int j = 0; j < tamanho; j++) {
-            for (int i = 1; i < tamanho; i++) { // percorre linhas de cima para baixo
-                if (matriz[i][j] != 0) {
-                    int k = i;
-
-                    // Move a peça enquanto houver espaço acima
-                    while (k > 0 && matriz[k-1][j] == 0) {
-                        matriz[k-1][j] = matriz[k][j];
-                        matriz[k][j] = 0;
-                        k--;
-                        movimento_valido = 1;
-                    }
-
-                    // Combina peças iguais não combinadas
-                    if (k > 0 && matriz[k-1][j] == matriz[k][j] &&
-                        !combinada[k-1][j] && !combinada[k][j]) {
-                        matriz[k-1][j] *= 2;
-                        matriz[k][j] = 0;
-                        combinada[k-1][j] = 1;
-                        movimento_valido = 1;
-                    }
-                }
-            }
-        }
-    }
-
-    // Movimentar para baixo
-    else if (direcao == 's') {
-        for (int j = 0; j < tamanho; j++) {
-            for (int i = tamanho-2; i >= 0; i--) { // percorre da penúltima linha até a primeira
-                if (matriz[i][j] != 0) {
-                    int k = i;
-
-                    // Move a peça enquanto houver espaço abaixo
-                    while (k < tamanho-1 && matriz[k+1][j] == 0) {
-                        matriz[k+1][j] = matriz[k][j];
-                        matriz[k][j] = 0;
-                        k++;
-                        movimento_valido = 1;
-                    }
-
-                    // Combina peças iguais não combinadas
-                    if (k < tamanho-1 && matriz[k+1][j] == matriz[k][j] &&
-                        !combinada[k+1][j] && !combinada[k][j]) {
-                        matriz[k+1][j] *= 2;
-                        matriz[k][j] = 0;
-                        combinada[k+1][j] = 1;
-                        movimento_valido = 1;
-                    }
-                }
-            }
-        }
-    }
-
-    return movimento_valido; // retorna se houve movimento ou combinação
+    return movimento_possivel; // 1 = ainda dá pra jogar, 0 = acabou
 }

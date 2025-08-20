@@ -9,11 +9,11 @@ typedef struct {
     int **matriz_tab;    // ponteiro de matriz para malloc
     int pontos;          // pontos atuais
     char nome[50];       // nome do jogador
-    int desfaz;          // chances de desfazer (não usado ainda)
-    int troca;           // chances de trocar (não usado ainda)
-    int **tab_anterior;  // tabuleiro anterior (não usado ainda) 
-    int pontos_anterior; // pontos anteriores (não usado ainda)
-    int temsalvo;        // flag para desfazer (não usado ainda)
+    int desfaz;          // chances de desfazer
+    int movimentos_desfazer; // quantidade de movimentos que ainda podem ser desfeitos
+    int **tab_anterior;  // tabuleiro anterior (para desfazer)
+    int pontos_anterior; // pontos anteriores (para desfazer)
 } Jogo;
+
 
 #endif // __STRUCT_H__

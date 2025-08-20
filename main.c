@@ -1,44 +1,55 @@
 // Ana Gabriela Gomes Lopes Pereira - 25.1.4119
+
+#include "struct.h"
+#include "exemplo.h"
+#include "menu.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
-#include "struct.h"
-#include "funcoes.h"
-
-#define TAM 4  // tamanho do tabuleiro 4x4
+#include <ctype.h>
 
 int main() {
-    srand(time(NULL)); // Inicializa o gerador de números aleatórios
-    void menu(void);
-    // Criação do Jogo de teste
-    Jogo jogo_teste;
-    jogo_teste.tamanho_tab = TAM;
-    jogo_teste.pontos = 0;
-    jogo_teste.matriz_tab = criar_matriz(TAM);
+    srand(time(NULL));
 
-    // Preenchendo o tabuleiro com algumas peças iniciais
-    jogo_teste.matriz_tab[0][0] = 2;
-    jogo_teste.matriz_tab[0][1] = 2;
-    jogo_teste.matriz_tab[0][2] = 2;
-    jogo_teste.matriz_tab[0][3] = 2;
+    Jogo jogo;
+    jogo.tamanho_tab = 4;
+    jogo.pontos = 0;
+    jogo.matriz_tab = criar_matriz(jogo.tamanho_tab);
 
-    printf("Tabuleiro inicial:\n");
-    imprimir_matriz(&jogo_teste);
+    // Inicializa duas peças aleatórias
+    n_aleatorio(&jogo);
+    n_aleatorio(&jogo);
 
-    char direcao;
-    printf("\nDigite a direção do movimento (w/a/s/d): ");
-    scanf(" %c", &direcao);
+    char comando;
+    int jogo_continua = 1;
 
-    // Executa o movimento não-guloso
-    if (movimento_nao_guloso(&jogo_teste, direcao)) {
-        printf("\nTabuleiro após o movimento '%c':\n", direcao);
-        imprimir_matriz(&jogo_teste);
-    } else {
-        printf("\nMovimento inválido ou nenhuma peça se moveu.\n");
+    while(jogo_continua) {
+        system("clear");
+        imprimir_matriz(&jogo);
+        printf("\nPontos: %d\n", jogo.pontos);
+        printf("Digite w/a/s/d para mover ou q para sair: ");
+        scanf(" %c", &comando);
+        comando = tolower(comando);
+
+        if(comando == 'q') break;
+
+        int houve_movimento = mover(&jogo, comando);
+        if(houve_movimento) {
+            n_aleatorio(&jogo); // adiciona nova peça
+        }
+
+        int estado = verificar_jogo(&jogo); // 1 se ainda tem movimento, 0 se não
+        if(estado == 0) {
+            system("clear");
+            imprimir_matriz(&jogo);
+            printf("\nFim de jogo! Nenhum movimento possível.\n");
+            break;
+        }
     }
 
-    // Libera memória do tabuleiro
-    liberar_matriz(jogo_teste.matriz_tab, TAM);
-
+    liberar_matriz(jogo.matriz_tab, jogo.tamanho_tab);
+    printf("Obrigado por jogar!\n");
     return 0;
 }
+
