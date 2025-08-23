@@ -46,9 +46,8 @@ void telaInicial() {
         for (int j = 0; j < espacos; j++) printf(" ");
         printf("%s\n", texto[i]);
     }
-    getchar(); // espera ENTER
+    limpar_buffer();
 }
-
 // Função 3: Limpa o buffer do teclado
 void limpar_buffer(void) {
     int c;
@@ -73,12 +72,12 @@ int **criar_matriz(int n) {
 }
 
 // Função 5: Imprime a matriz colorida do jogo
-void imprimir_matriz(Jogo *j) {
-    int n = j->tamanho_tab;
+void imprimir_matriz(Jogo *jogo) {
+    int n = jogo->tamanho_tab;
     char cel[8];
 
-    printf("Jogador: %s | Pontos: %d\n", j->nome, j->pontos);
-    printf("Chances de trocar: %d | Desfazer: %d\n", j->trocas_restantes, j->desfazer_restantes);
+    printf("Jogador: %s | Pontos: %d\n", jogo->nome, jogo->pontos);
+    printf("Chances de trocar: %d | Desfazer: %d\n", jogo->trocas_restantes, jogo->desfazer_restantes);
 
     // Cabeçalho das colunas
     printf("   ");
@@ -87,9 +86,9 @@ void imprimir_matriz(Jogo *j) {
 
     // Imprime linhas
     for (int i = 0; i < n; i++) {
-        printf("%c ", 'A' + i); // letra da linha
+        printf("%c ", 'A' + i);
         for (int j = 0; j < n; j++) {
-            int v = j->matriz_tab[i][j];
+            int v = jogo->matriz_tab[i][j];
             sprintf(cel, v == 0 ? "   " : "%2d ", v);
             printf("%s", cel);
         }
@@ -124,25 +123,15 @@ int **copiar_matriz(int **matriz, int tamanho) {
 // Função 8: Insere números aleatórios no tabuleiro
 void n_aleatorio(Jogo *jogo_atual) {
     int n = jogo_atual->tamanho_tab;
-    int pecas;
-
-    if (n == 6) pecas = 2;
-    else pecas = 1;
+    int pecas = (n == 6) ? 2 : 1;
 
     for (int p = 0; p < pecas; p++) {
         int linha, coluna, valor;
         int prob = rand() % 100;
 
-        if (n == 4) {
-            if (prob < 90) valor = 2;
-            else valor = 4;
-        } else if (n == 5) {
-            if (prob < 85) valor = 2;
-            else valor = 4;
-        } else {
-            if (prob < 80) valor = 2;
-            else valor = 4;
-        }
+        if (n == 4) valor = (prob < 90) ? 2 : 4;
+        else if (n == 5) valor = (prob < 85) ? 2 : 4;
+        else valor = (prob < 80) ? 2 : 4;
 
         do {
             linha = rand() % n;
@@ -153,122 +142,11 @@ void n_aleatorio(Jogo *jogo_atual) {
     }
 }
 
-// ==================== MOVIMENTAÇÃO E PONTUAÇÃO ====================
-// Função 1: Move para a esquerda
-int mover_esquerda(Jogo *jogo){
-    int n = jogo->tamanho_tab;  
-    int movimento = 0;  // flag para indicar se houve movimento/fusão
+// ==================== MOVIMENTAÇÃO ====================
 
-    for(int i = 0; i < n; i++){
-        int houve_movimento = 0;    
-        int linha[n];
-
-        // Copia a linha original
-        for(int j = 0; j < n; j++){
-            linha[j] = jogo->matriz_tab[i][j];
-        }
-
-        // Processa a linha usando a lógica de movimento não-gulosa
-        movimento_nao_guloso(linha, n, &(jogo->pontos), &houve_movimento);
-
-        // Copia a linha processada de volta para o tabuleiro
-        for(int j = 0; j < n; j++){
-            jogo->matriz_tab[i][j] = linha[j];
-        }
-
-        if(houve_movimento){
-            movimento = 1;
-        }
-    }
-    return movimento;
-}
-
-// Função 2: Move para a direita(Inverte a linha, aplica a função de movimento não-guloso)
-int mover_direita(Jogo *jogo){
-    int n = jogo->tamanho_tab;
-    int movimento = 0;
-
-    for(int i = 0; i < n; i++){
-        int houve_movimento = 0;
-        int linha[n];
-
-        // Inverte a linha para simular movimento à direita usando a lógica da esquerda
-        for(int j = 0; j < n; j++){
-            linha[j] = jogo->matriz_tab[i][n-1-j];
-        }
-
-        movimento_nao_guloso(linha, n, &(jogo->pontos), &houve_movimento);
-
-        // Reverte a linha processada de volta
-        for(int j = 0; j < n; j++){
-            jogo->matriz_tab[i][n-1-j] = linha[j];
-        }
-
-        if(houve_movimento){
-            movimento = 1;
-        }
-    }
-    return movimento;
-}
-
-// Função 3: Move para cima(A função já empurra os números "para cima" porque processamos a coluna como se fosse uma linha)
-int mover_cima(Jogo *jogo){
-    int n = jogo->tamanho_tab;
-    int movimento = 0;
-
-    for(int j = 0; j < n; j++){
-        int houve_movimento = 0;
-        int coluna[n];
-
-        for(int i = 0; i < n; i++){
-            coluna[i] = jogo->matriz_tab[i][j];
-        }
-
-        movimento_nao_guloso(coluna, n, &(jogo->pontos), &houve_movimento);
-
-        for(int i = 0; i < n; i++){
-            jogo->matriz_tab[i][j] = coluna[i];
-        }
-
-        if(houve_movimento){
-            movimento = 1;
-        }
-    }
-    return movimento;
-}
-
-// Função 4: Move para baixo(Inverte a coluna, aplica a função de movimento não-guloso, e reverte novamente)
-int mover_baixo(Jogo *jogo){
-    int n = jogo->tamanho_tab;
-    int movimento = 0;
-
-    for(int j = 0; j < n; j++){
-        int houve_movimento = 0;
-        int coluna[n];
-
-        // Inverte a coluna para usar a função de movimento não-guloso
-        for(int i = 0; i < n; i++){
-            coluna[i] = jogo->matriz_tab[n-1-i][j];
-        }
-
-        movimento_nao_guloso(coluna, n, &(jogo->pontos), &houve_movimento);
-
-        // Reverte a coluna processada de volta para a matriz original
-        for(int i = 0; i < n; i++){
-            jogo->matriz_tab[n-1-i][j] = coluna[i];
-        }
-
-        if(houve_movimento){
-            movimento = 1;
-        }
-    }
-    return movimento;
-}
-
-// Função 14: Processa linha ou coluna para empurrar e combinar números iguais
+// Função 9: Processa linha ou coluna para empurrar e combinar números iguais
 void movimento_nao_guloso(int *linha, int tamanho, int *pontuacao, int *houve_movimento) {
-    int original[tamanho];
-    int combinada[tamanho];
+    int original[tamanho], combinada[tamanho];
     for (int i = 0; i < tamanho; i++) {
         original[i] = linha[i];
         combinada[i] = 0;
@@ -315,9 +193,79 @@ void movimento_nao_guloso(int *linha, int tamanho, int *pontuacao, int *houve_mo
     }
 }
 
-// Função 15: Desfaz o último movimento
+// Funções de movimentação: esquerda, direita, cima e baixo
+int mover_esquerda(Jogo *jogo){
+    int n = jogo->tamanho_tab;
+    int movimento = 0;
+
+    for(int i = 0; i < n; i++){
+        int houve_movimento = 0;
+        int linha[n];
+        for(int j = 0; j < n; j++) linha[j] = jogo->matriz_tab[i][j];
+
+        movimento_nao_guloso(linha, n, &(jogo->pontos), &houve_movimento);
+
+        for(int j = 0; j < n; j++) jogo->matriz_tab[i][j] = linha[j];
+        if(houve_movimento) movimento = 1;
+    }
+    return movimento;
+}
+
+int mover_direita(Jogo *jogo){
+    int n = jogo->tamanho_tab;
+    int movimento = 0;
+
+    for(int i = 0; i < n; i++){
+        int houve_movimento = 0;
+        int linha[n];
+        for(int j = 0; j < n; j++) linha[j] = jogo->matriz_tab[i][n-1-j];
+
+        movimento_nao_guloso(linha, n, &(jogo->pontos), &houve_movimento);
+
+        for(int j = 0; j < n; j++) jogo->matriz_tab[i][n-1-j] = linha[j];
+        if(houve_movimento) movimento = 1;
+    }
+    return movimento;
+}
+
+int mover_cima(Jogo *jogo){
+    int n = jogo->tamanho_tab;
+    int movimento = 0;
+
+    for(int j = 0; j < n; j++){
+        int houve_movimento = 0;
+        int coluna[n];
+        for(int i = 0; i < n; i++) coluna[i] = jogo->matriz_tab[i][j];
+
+        movimento_nao_guloso(coluna, n, &(jogo->pontos), &houve_movimento);
+
+        for(int i = 0; i < n; i++) jogo->matriz_tab[i][j] = coluna[i];
+        if(houve_movimento) movimento = 1;
+    }
+    return movimento;
+}
+
+int mover_baixo(Jogo *jogo){
+    int n = jogo->tamanho_tab;
+    int movimento = 0;
+
+    for(int j = 0; j < n; j++){
+        int houve_movimento = 0;
+        int coluna[n];
+        for(int i = 0; i < n; i++) coluna[i] = jogo->matriz_tab[n-1-i][j];
+
+        movimento_nao_guloso(coluna, n, &(jogo->pontos), &houve_movimento);
+
+        for(int i = 0; i < n; i++) jogo->matriz_tab[n-1-i][j] = coluna[i];
+        if(houve_movimento) movimento = 1;
+    }
+    return movimento;
+}
+
+// ==================== DESFAZER / TROCAR ====================
+
 void desfazer_movimento(Jogo *jogo) {
-    if (jogo->desfazer <= 0) {
+    if (jogo->desfazer_restantes <= 0) {
         printf("Sem chances de desfazer!\n");
         return;
     }
@@ -328,18 +276,19 @@ void desfazer_movimento(Jogo *jogo) {
             jogo->matriz_tab[i][j] = jogo->tab_anterior[i][j];
 
     jogo->pontos = jogo->pontos_anterior;
-    jogo->desfazer--;
-    printf("Movimento desfeito. Restam %d desfazer(s)\n", jogo->desfazer);
+    jogo->desfazer_restantes--;
+    printf("Movimento desfeito. Restam %d desfazer(s)\n", jogo->desfazer_restantes);
 }
 
-// Função 16: Troca duas peças do tabuleiro
 void trocar_pecas(Jogo *jogo) {
-    if (jogo->trocar_pecas <= 0) {
+    if (jogo->trocas_restantes <= 0) {
         printf("Sem chances de trocar peças!\n");
         return;
     }
+
     char pos1[3], pos2[3];
     int l1, c1, l2, c2;
+
     printf("Digite a primeira posição (Ex: A1): ");
     scanf("%2s", pos1);
     printf("Digite a segunda posição (Ex: B3): ");
@@ -360,22 +309,17 @@ void trocar_pecas(Jogo *jogo) {
     jogo->matriz_tab[l1][c1] = jogo->matriz_tab[l2][c2];
     jogo->matriz_tab[l2][c2] = temp;
 
-    jogo->trocar_pecas--;
-    printf("Peças trocadas. Restam %d trocas\n", jogo->trocar_pecas);
-}
-
-// Função 17: Adiciona pontos ao jogador
-void adicionar_pontos(Jogo *jogo, int pontos) {
-    jogo->pontos += pontos;
+    jogo->trocas_restantes--;
+    printf("Peças trocadas. Restam %d trocas\n", jogo->trocas_restantes);
 }
 
 // ==================== VERIFICAÇÕES ====================
-// Função 18: Verifica se ainda existem movimentos possíveis
+
 int verificar_jogo(Jogo *jogo) {
     int n = jogo->tamanho_tab;
     for (int i = 0; i < n; i++)
         for (int j = 0; j < n; j++)
-            if (jogo->matriz_tab[i][j] == 0) return 1; // célula vazia = movimento possível
+            if (jogo->matriz_tab[i][j] == 0) return 1;
 
     for (int i = 0; i < n; i++)
         for (int j = 0; j < n; j++) {
@@ -385,7 +329,6 @@ int verificar_jogo(Jogo *jogo) {
     return 0;
 }
 
-// Função 19: Verifica se jogador atingiu 2048
 int verificar_vitoria(Jogo *jogo) {
     int n = jogo->tamanho_tab;
     char opcao;
@@ -401,16 +344,15 @@ int verificar_vitoria(Jogo *jogo) {
                 } while (opcao != 's' && opcao != 'n');
                 return (opcao == 's') ? 1 : 0;
             }
-    return 2; // ainda não venceu
+    return 2;
 }
 
-// Função 20: Verifica se o jogador perdeu
 int verificar_derrota(Jogo *jogo) {
-    if (verificar_jogo(jogo)) return 1; // ainda há movimento
+    if (verificar_jogo(jogo)) return 1;
 
-    char opcao;
     printf("\nGame Over! Não existem mais movimentos possíveis.\n");
-    if (jogo->desfazer > 0) {
+    if (jogo->desfazer_restantes > 0) {
+        char opcao;
         do {
             printf("Deseja usar DESFAZER? (s/n): ");
             scanf(" %c", &opcao);
@@ -419,8 +361,8 @@ int verificar_derrota(Jogo *jogo) {
         } while (opcao != 's' && opcao != 'n');
 
         if (opcao == 's') {
-            jogo->desfazer--;
-            return 2; // desfazer o último movimento
+            jogo->desfazer_restantes--;
+            return 2;
         }
     }
     printf("Voltando ao menu principal...\n");

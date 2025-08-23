@@ -28,5 +28,5 @@ void continuar_jogo(Jogo *jogo_atual); // Continua jogo salvo
 
 // Protótipos auxiliares
 void mostrar_ajuda(void); // Mostra instruções
- 
+
 #endif // __MENU_H__

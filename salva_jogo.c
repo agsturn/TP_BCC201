@@ -6,7 +6,7 @@
 #include <string.h>
 
 // FUNÇÃO A:Salva o jogo atual em arquivo texto
-void salvar_arquivo(Jogo *jogo, const char *arquivo) {
+void salvar_jogo(Jogo *jogo, const char *arquivo) {
     FILE *arquivo_jogo = fopen(arquivo, "w");
     if (!arquivo_jogo) {
         printf("Erro ao abrir o arquivo para salvar.\n");
@@ -43,7 +43,7 @@ void salvar_arquivo(Jogo *jogo, const char *arquivo) {
 }
 
 // FUNÇÃO B: Carrega um jogo salvo de um arquivo texto
-void carregar_arquivo(Jogo *jogo, const char *arquivo) {
+void carregar_jogo(Jogo *jogo, const char *arquivo) {
     FILE *arquivo_jogo = fopen(arquivo, "r");
     if (!arquivo_jogo) {
         printf("Erro ao abrir o arquivo para carregar.\n");
@@ -97,7 +97,7 @@ void carregar_arquivo(Jogo *jogo, const char *arquivo) {
 }
 
 // FUNÇÃO C: Mostra o conteúdo de um arquivo de jogo sem alterar o estado atual
-void ler_arquivo(const char *arq) {
+void ler_jogo(const char *arq) {
     FILE *arquivo_jogo = fopen(arq, "r");
     if (!arquivo_jogo) {
         printf("Erro ao abrir o arquivo %s.\n", arq);

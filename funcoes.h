@@ -74,6 +74,6 @@ int verificar_movimento(Jogo *jogo);
 int verificar_vitoria(Jogo *jogo);
 
 // Verifica se não há mais movimentos possíveis (derrota)
-void verificar_derrota(Jogo *jogo);
+int verificar_derrota(Jogo *jogo);
 
 #endif // __FUNCOES_H__
