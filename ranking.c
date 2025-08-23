@@ -4,166 +4,147 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// Função 1: Função para criar o arquivo de ranking inicial
+// Função 1: Criar o arquivo de ranking inicial
 void criar_ranking(void) {
-    FILE *arqRanking = fopen("ranking.dat", "wb");
-    if (!arqRanking) {
+    FILE *arquivoRanking = fopen("ranking.dat", "wb");
+    if (!arquivoRanking) {
         printf("Erro ao criar arquivo ranking.dat\n");
         return;
     }
 
-    int num4 = 0;
-    int num5 = 0;
-    int num6 = 0;
+    // Inicializa os contadores para cada tamanho de tabuleiro
+    int totalTabuleiro[3] = {0, 0, 0}; 
+    fwrite(totalTabuleiro, sizeof(int), 3, arquivoRanking);
 
-    // Grava os três números no início do arquivo
-    // Eles indicam quantas pontuações existem para cada tamanho
-    fwrite(&num4, sizeof(int), 1, arqRanking);
-    fwrite(&num5, sizeof(int), 1, arqRanking);
-    fwrite(&num6, sizeof(int), 1, arqRanking);
-
-    fclose(arqRanking);
+    fclose(arquivoRanking);
     printf("Arquivo ranking.dat criado com sucesso!\n");
 }
 
-// Função 2: Mostrar ranking
+// Função 2: Mostra ranking completo
 void mostrar_ranking(void) {
-    FILE *arqRanking = fopen("ranking.dat", "rb");// Abre o arquivo binário de ranking
-    if (!arqRanking) {
+    FILE *arquivoRanking = fopen("ranking.dat", "rb");
+    if (!arquivoRanking) {
         printf("Arquivo ranking.dat não encontrado!\n");
         return;
     }
 
-    // Lê a quantidade de pontuações cadastradas para cada tamanho de tabuleiro
-    int num4, num5, num6;
-    fread(&num4, sizeof(int), 1, arqRanking);
-    fread(&num5, sizeof(int), 1, arqRanking);
-    fread(&num6, sizeof(int), 1, arqRanking);
+    int totalTabuleiro[3];
+    fread(totalTabuleiro, sizeof(int), 3, arquivoRanking);
 
-    char nome_jogador[100];
-    int pontos;              
+    char nome[100];
+    int pontos;
 
-    printf("===== Ranking 4x4 =====\n");
-    for(int i = 0; i < num4; i++) {
-        fread(nome_jogador, sizeof(char), 100, arqRanking); 
-        fread(&pontos, sizeof(int), 1, arqRanking);         
-        printf("%2d. %-27s %d\n", i+1, nome_jogador, pontos);
+    // Mostra ranking para cada tabuleiro
+    for (int tab = 0; tab < 3; tab++) {
+        printf("===== Ranking Tabuleiro %d =====\n", tab + 1);
+        for (int i = 0; i < totalTabuleiro[tab]; i++) {
+            fread(nome, sizeof(char), 100, arquivoRanking);
+            fread(&pontos, sizeof(int), 1, arquivoRanking);
+            printf("%2d. %-27s %d\n", i+1, nome, pontos);
+        }
+        printf("\n");
     }
 
-    printf("\n===== Ranking 5x5 =====\n");
-    for(int i = 0; i < num5; i++) {
-        fread(nome_jogador, sizeof(char), 100, arqRanking);
-        fread(&pontos, sizeof(int), 1, arqRanking);
-        printf("%2d. %-27s %d\n", i+1, nome_jogador, pontos);
-    }
-
-    printf("\n===== Ranking 6x6 =====\n");
-    for(int i = 0; i < num6; i++) {
-        fread(nome_jogador, sizeof(char), 100, arqRanking);
-        fread(&pontos, sizeof(int), 1, arqRanking);
-        printf("%2d. %-27s %d\n", i+1, nome_jogador, pontos);
-    }
-
-    // Fecha o arquivo
-    fclose(arqRanking);
+    fclose(arquivoRanking);
 }
 
-// Função 3: Função para atualizar o ranking 
+// Função 3: Atualiza ranking considerando desempate por movimentos especiais
 void atualizar_ranking(Jogo *jogo) {
-    FILE *arqRanking = fopen("ranking.dat", "rb+");
-    if (!arqRanking) {
+    FILE *arquivoRanking = fopen("ranking.dat", "rb+");
+    if (!arquivoRanking) {
         printf("Arquivo ranking.dat não encontrado!\n");
         return;
     }
 
-    // Lê a quantidade de pontuações cadastradas para cada tamanho de tabuleiro
-    int num4, num5, num6;
-    fread(&num4, sizeof(int), 1, arqRanking);
-    fread(&num5, sizeof(int), 1, arqRanking);
-    fread(&num6, sizeof(int), 1, arqRanking);
+    // Lê os contadores de cada tabuleiro
+    int totalTabuleiro[3];
+    fread(totalTabuleiro, sizeof(int), 3, arquivoRanking);
 
-    // Buffers para armazenar nomes e pontuações
+    // Determina índice do tabuleiro baseado no tamanho
+    int indiceTab = jogo->tamanho_tab - 4; // Ex: 4x4=0, 5x5=1, 6x6=2
+    if (indiceTab < 0 || indiceTab > 2) {
+        fclose(arquivoRanking);
+        return;
+    }
+
+    // Calcula posição inicial do ranking no arquivo
+    long posicaoInicial = sizeof(int) * 3; 
+    for (int i = 0; i < indiceTab; i++) {
+        posicaoInicial += totalTabuleiro[i] * (sizeof(char)*100 + sizeof(int));
+    }
+
+    fseek(arquivoRanking, posicaoInicial, SEEK_SET);
+
+    // Lê ranking existente
     char nomes[10][100];
     int pontos[10];
-    int *num_jogadores;
-    long pos_inicial;
+    int movimentosEspeciais[10]; // Para desempate
+    int totalAtual = totalTabuleiro[indiceTab];
 
-    // Determina qual ranking atualizar com base no tamanho do tabuleiro
-    if(jogo->tamanho_tab == 4) {
-        pos_inicial = sizeof(int)*3;
-        fseek(arqRanking, pos_inicial, SEEK_SET);
-        for(int i = 0; i < num4; i++) {
-            fread(nomes[i], sizeof(char), 100, arqRanking);
-            fread(&pontos[i], sizeof(int), 1, arqRanking);
-        }
-        num_jogadores = &num4;
-    } else if(jogo->tamanho_tab == 5) {
-        pos_inicial = sizeof(int)*3 + (sizeof(char)*100 + sizeof(int))*num4;
-        fseek(arqRanking, pos_inicial, SEEK_SET);
-        for(int i = 0; i < num5; i++) {
-            fread(nomes[i], sizeof(char), 100, arqRanking);
-            fread(&pontos[i], sizeof(int), 1, arqRanking);
-        }
-        num_jogadores = &num5;
-    } else if(jogo->tamanho_tab == 6) {
-        pos_inicial = sizeof(int)*3 + (sizeof(char)*100 + sizeof(int))*(num4 + num5);
-        fseek(arqRanking, pos_inicial, SEEK_SET);
-        for(int i = 0; i < num6; i++) {
-            fread(nomes[i], sizeof(char), 100, arqRanking);
-            fread(&pontos[i], sizeof(int), 1, arqRanking);
-        }
-        num_jogadores = &num6;
-    } else {
-        fclose(arqRanking);
-        return; // Tamanho de tabuleiro inválido
+    for (int i = 0; i < totalAtual; i++) {
+        fread(nomes[i], sizeof(char), 100, arquivoRanking);
+        fread(&pontos[i], sizeof(int), 1, arquivoRanking);
+        movimentosEspeciais[i] = 0; // Inicialmente 0
     }
 
-    // Adiciona novo jogador ao ranking
-    if(*num_jogadores < 10) { // se ainda houver espaço
-        strncpy(nomes[*num_jogadores], jogo->nome, 100);
-        nomes[*num_jogadores][99] = '\0'; // garante terminação
-        pontos[*num_jogadores] = jogo->pontos;
-        (*num_jogadores)++;
-    } else if(jogo->pontos > pontos[9]) { // substitui o menor se maior que o último
-        strncpy(nomes[9], jogo->nome, 100);
+    // Desempate: menos movimentos especiais usados é melhor
+    int desempateJogador = jogo->trocas_restantes + jogo->desfazer_restantes;
+
+    // Adiciona novo jogador ou substitui pior considerando desempate
+    if (totalAtual < 10) {
+        strcpy(nomes[totalAtual], jogo->nome);
+        nomes[totalAtual][99] = '\0';  // 
+        pontos[totalAtual] = jogo->pontos;
+        movimentosEspeciais[totalAtual] = desempateJogador;
+        totalAtual++;
+    } else if (jogo->pontos > pontos[9] || 
+              (jogo->pontos == pontos[9] && desempateJogador < movimentosEspeciais[9])) {
+        strcpy(nomes[9], jogo->nome);
         nomes[9][99] = '\0';
         pontos[9] = jogo->pontos;
+        movimentosEspeciais[9] = desempateJogador;
     } else {
-        fclose(arqRanking);
-        return; // pontuação muito baixa para entrar no ranking
+        fclose(arquivoRanking);
+        return;
     }
 
-    // Ordena do maior para o menor usando Bubble Sort
-    for(int i = 0; i < *num_jogadores - 1; i++) {
-        for(int j = i + 1; j < *num_jogadores; j++) {
-            if(pontos[j] > pontos[i]) {
+    // Ordena ranking: maior pontuação primeiro, desempate por menos movimentos usados
+    for (int i = 0; i < totalAtual-1; i++) {
+        for (int j = i+1; j < totalAtual; j++) {
+            if (pontos[j] > pontos[i] ||
+                (pontos[j] == pontos[i] && movimentosEspeciais[j] < movimentosEspeciais[i])) {
+                
                 // Troca pontuação
-                int tmp_p = pontos[i];
+                int pontosTemporario = pontos[i];
                 pontos[i] = pontos[j];
-                pontos[j] = tmp_p;
-                // Troca nome correspondente
-                char tmp_n[100];
-                strcpy(tmp_n, nomes[i]);
+                pontos[j] = pontosTemporario;
+
+                // Troca nome
+                char nomeTemporario[100];
+                strcpy(nomeTemporario, nomes[i]);
                 strcpy(nomes[i], nomes[j]);
-                strcpy(nomes[j], tmp_n);
+                strcpy(nomes[j], nomeTemporario);
+
+                // Troca valor de desempate
+                int movimentosTemporario = movimentosEspeciais[i];
+                movimentosEspeciais[i] = movimentosEspeciais[j];
+                movimentosEspeciais[j] = movimentosTemporario;
             }
         }
     }
 
-    // Grava de volta no arquivo
-    fseek(arqRanking, pos_inicial, SEEK_SET);
-    for(int i = 0; i < *num_jogadores; i++) {
-        fwrite(nomes[i], sizeof(char), 100, arqRanking);
-        fwrite(&pontos[i], sizeof(int), 1, arqRanking);
+    // Grava ranking atualizado
+    fseek(arquivoRanking, posicaoInicial, SEEK_SET);
+    for (int i = 0; i < totalAtual; i++) {
+        fwrite(nomes[i], sizeof(char), 100, arquivoRanking);
+        fwrite(&pontos[i], sizeof(int), 1, arquivoRanking);
     }
 
-    // Atualiza os contadores iniciais
-    fseek(arqRanking, 0, SEEK_SET);
-    fwrite(&num4, sizeof(int), 1, arqRanking);
-    fwrite(&num5, sizeof(int), 1, arqRanking);
-    fwrite(&num6, sizeof(int), 1, arqRanking);
+    // Atualiza contadores no início do arquivo
+    totalTabuleiro[indiceTab] = totalAtual;
+    fseek(arquivoRanking, 0, SEEK_SET);
+    fwrite(totalTabuleiro, sizeof(int), 3, arquivoRanking);
 
-    fclose(arqRanking);
-    printf("Ranking atualizado com sucesso!\n");
+    fclose(arquivoRanking);
+    printf("Ranking atualizado considerando desempate por movimentos especiais!\n");
 }
-
