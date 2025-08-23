@@ -10,6 +10,9 @@
 #include <ctype.h>
 #include "struct.h"
 #include "funcoes.h"
+#include "menu.h"
+#include "ranking.h"
+#include "salva_jogo.h"
 
 // Cores ANSI
 #define ANSI_RESET            "\x1b[0m"

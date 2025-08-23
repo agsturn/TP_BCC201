@@ -1,8 +1,9 @@
-// Ana Gabriela Gomes Lopes Pereira - 25.1.4119
+//Ana Gabriela Gomes Lopes Pereira - 25.1.4119
 
 #include "menu.h"
 #include "funcoes.h"
+#include "salva_jogo.h"
+#include "ranking.h"
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <ctype.h>
 

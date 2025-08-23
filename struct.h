@@ -1,19 +1,33 @@
-//Ana Gabriela - 25.1.4119
+//Ana Gabriela Gomes Lopes Pereira - 25.1.4119
 
 #ifndef __STRUCT_H__
 #define __STRUCT_H__
 
-// Struct para guardar as informações do jogo
+// Estrutura principal do jogo
 typedef struct {
-    int tamanho_tab;     // tamanho do tabuleiro
-    int **matriz_tab;    // ponteiro de matriz para malloc
-    int pontos;          // pontos atuais
-    char nome[50];       // nome do jogador
-    int desfaz;          // chances de desfazer
-    int movimentos_desfazer; // quantidade de movimentos que ainda podem ser desfeitos
-    int **tab_anterior;  // tabuleiro anterior (para desfazer)
-    int pontos_anterior; // pontos anteriores (para desfazer)
+    int tamanho_tab;          
+    int **matriz_tab;         
+    int pontos;               
+    char nome[100];            
+    // usar para desfazer
+    int **tab_anterior;// tabuleiro anterior
+    int pontos_anterior;// pontos anteriores 
+    int desfazer_restantes;// quantidade de desfazer 
+    // usar para trocar
+    int trocas_restantes;// quantidade de trocas 
 } Jogo;
 
+// Estrutura auxiliar para ranking de um tabuleiro específico
+typedef struct {
+    int pontos[10];           // top 10 maiores pontuações
+    int numpontos;               // quantidade de pontuações cadastradas
+} Rankingtamanho;
+
+// Ranking completo (para diferentes tamanhos de tabuleiro)
+typedef struct {
+    Rankingtamanho tab4;
+    Rankingtamanho tab5;
+    Rankingtamanho tab6;
+} Ranking;
 
 #endif // __STRUCT_H__
