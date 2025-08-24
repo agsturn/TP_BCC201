@@ -1,4 +1,5 @@
 #Ana Gabriela -25.1.4119
+
 # Nome do executável
 TARGET = jogo
 

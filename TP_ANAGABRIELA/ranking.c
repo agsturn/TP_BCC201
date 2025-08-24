@@ -4,18 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-// Definindo cores para o terminal
-#define RESET   "\033[0m"
-#define VERMELHO "\033[31m"
-#define VERDE   "\033[32m"
-#define AMARELO "\033[33m"
-#define AZUL    "\033[34m"
-#define MAGENTA "\033[35m"
-#define CIANO   "\033[36m"
-#define BRANCO  "\033[37m"
-#define CIANA   "\033[36;1m"
-#define NEGRITO "\033[1m"
+#include "exemplo.h"
 
 //  Função A: Cria um arquivo binário de ranking inicial 
 void criar_ranking(void) {

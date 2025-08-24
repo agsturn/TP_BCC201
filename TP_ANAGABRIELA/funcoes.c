@@ -77,18 +77,24 @@ int **criar_matriz(int n) {
 }
 
 const char* cor_valor(int valor) {
-    if (valor == 2) return VERMELHO;
-    if (valor == 4) return VERDE;
-    if (valor == 8) return AMARELO;
-    if (valor == 16) return AZUL;
-    if (valor == 32) return MAGENTA;
-    if (valor == 64) return CIANA;
-    return NEGRITO;
+    switch(valor) {
+        case 2:       return VERMELHO;
+        case 4:       return VERDE;
+        case 8:       return AMARELO;
+        case 16:      return AZUL;
+        case 32:      return MAGENTA;
+        case 64:      return CIANA;
+        case 128:     return NEGRITO VERMELHO;   
+        case 256:     return NEGRITO VERDE;      
+        case 512:     return NEGRITO AMARELO;    
+        case 1024:    return NEGRITO AZUL;       
+        case 2048:    return NEGRITO MAGENTA;   
+        default:      return NEGRITO;            // para 0 ou valores maiores
+    }
 }
 
+
 void imprimir_matriz(Jogo *jogo) {
-    int tamanho = jogo->tamanho_tab;
-    int largura_total = 60;
 
     // Cabeçalho simples
     printf("\n");
