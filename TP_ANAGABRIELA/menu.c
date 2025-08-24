@@ -134,7 +134,6 @@ void menu() {
 
     } while (opcao != 'R');
 }
-
 void sair(Jogo *jogo) {
     char opcao;
 
