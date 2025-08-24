@@ -14,9 +14,8 @@
 #include "menu.h"
 #include "salva_jogo.h"
 
-// ==================== FUNÇÕES DE RANKING ====================
-void criar_ranking();// Cria o ranking inicial 
-void mostrar_ranking();// Mostra o ranking completo na tela
-void atualizar_ranking(Jogo *jogo);// Atualiza o ranking 
+void criar_ranking();
+void mostrar_ranking();
+void atualizar_ranking(Jogo *jogo);
 
 #endif // __RANKING_H__
