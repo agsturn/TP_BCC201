@@ -1,5 +1,4 @@
 // Ana Gabriela Gomes Lopes Pereira - 25.1.4119
-// Arquivo principal para testar todas as funcionalidades do 2048
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,8 +8,11 @@
 #include "salva_jogo.h"
 #include "ranking.h"
 
-int main (){
-    telaInicial();
-    menu();
+int main(void) {
+    srand(time(NULL)); // Inicia o gerador de números aleatórios
+    
+    telaInicial();// Mostra tela inicial
+    menu();// Inicia o menu principal
+
     return 0;
 }

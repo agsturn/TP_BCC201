@@ -8,66 +8,90 @@
 #include <ctype.h>
 #include <time.h>
 
-// ==================== FUNÇÕES BÁSICAS ====================
-void centralizar(const char *texto, int largura_total) {
-    // Calcula comprimento real ignorando códigos de cor
+// ==================== FUNÇÕES DE DESENHO ====================
+// Função A: Desenha linha horizontal da tabela
+void desenhar_linha(int largura, char inicio, char fim, char linha_char) { //char incio é as juntas
+    printf("%c", inicio);
+    for (int i = 0; i < largura - 2; i++) {
+        printf("%c", linha_char);
+    }
+    printf("%c\n", fim);
+}
+
+// Função B: Desenha linha com texto centralizado (ignora códigos de cor)
+void desenhar_texto_centralizado(int largura, const char *texto, const char *cor) {
     int comprimento_real = 0;
-    int dentro_codigo = 0;
+    int em_codigo = 0;
     
+    // Calcula comprimento real sem códigos de cor
     for (int i = 0; texto[i] != '\0'; i++) {
-        if (texto[i] == '\x1b') { // Início do código ANSI
-            dentro_codigo = 1;
-            continue;
-        }
-        if (dentro_codigo) {
-            if (texto[i] == 'm') { // Fim do código ANSI
-                dentro_codigo = 0;
-            }
-            continue;
-        }
+        if (texto[i] == '\x1b') { em_codigo = 1; continue; }
+        if (em_codigo) { if (texto[i] == 'm') em_codigo = 0; continue; }
         comprimento_real++;
     }
     
-    int espacos = (largura_total - comprimento_real) / 2;
-    if (espacos < 0) espacos = 0;
+    int espacos_esquerda = (largura - comprimento_real - 2) / 2;
+    int espacos_direita = largura - comprimento_real - espacos_esquerda - 3;
     
-    for (int i = 0; i < espacos; i++) {
-        printf(" ");
-    }
-    printf("%s\n", texto);
+    printf("║");
+    for (int i = 0; i < espacos_esquerda; i++) printf(" ");
+    printf("%s%s%s", cor, texto, RESET);
+    for (int i = 0; i < espacos_direita; i++) printf(" ");
+    printf("║\n");
 }
 
+// [C] Desenha tabela completa com título e itens
+void desenhar_tabela(const char *titulo, const char **itens, const char **cores, int total_itens, int largura) {
+    desenhar_linha(largura, '╔', '╗', '═');
+    desenhar_texto_centralizado(largura, titulo, AMARELO);
+    desenhar_linha(largura, '╠', '╣', '═');
+    
+    for (int i = 0; i < total_itens; i++) {
+        desenhar_texto_centralizado(largura, itens[i], cores[i]);
+    }
+    
+    desenhar_linha(largura, '╚', '╝', '═');
+}
+
+// ==================== FUNÇÕES BÁSICAS ====================
+
+// [D] Tela inicial do jogo
 void telaInicial() {
     system("clear");
     
-    printf(CIANA "╔══════════════════════════════════════════════╗\n" RESET);
-    printf(CIANA "║" AMARELO "            🎮 BEM-VINDO AO 2048 🎮            " CIANA "║\n" RESET);
-    printf(CIANA "╠══════════════════════════════════════════════╣\n" RESET);
-    printf(CIANA "║" AZUL "         Criado por: Ana Gabriela         " CIANA "║\n" RESET);
-    printf(CIANA "║" AZUL "           Matrícula: 25.1.4119           " CIANA "║\n" RESET);
-    printf(CIANA "║" VERMELHO "             ♥ Puca lover ♥              " CIANA "║\n" RESET);
-    printf(CIANA "║" VERDE "     \"Professor, espero que se divirta!\"    " CIANA "║\n" RESET);
-    printf(CIANA "╚══════════════════════════════════════════════╝\n" RESET);
+    const char *titulo = "🎮 BEM-VINDO AO 2048 🎮";
+    const char *itens[] = {
+        "Criado por: Ana Gabriela",
+        "Matrícula: 25.1.4119",
+        "♥ Puca lover ♥",
+        "\"Professor, divirta-se!\""
+    };
+    const char *cores[] = {AZUL, AZUL, VERMELHO, VERDE};
+    
+    desenhar_tabela(titulo, itens, cores, 4, 50);
     
     printf("\n");
-    printf(AMARELO "        Pressione ENTER para iniciar o jogo...\n" RESET);
-    
+    printf(AMARELO "Pressione ENTER para começar...\n" RESET);
     getchar();
 }
 
-void limpar_buffer(void) {
+// [E] Limpa buffer do teclado
+void limpar_buffer() {
     int c;
     while ((c = getchar()) != '\n' && c != EOF);
 }
 
-// ==================== MATRIZ ====================
+// ==================== FUNÇÕES DE MATRIZ ====================
+
+// [1] Cria matriz dinamicamente
 int **criar_matriz(int n) {
     int **matriz = malloc(n * sizeof(int *));
     if (!matriz) return NULL;
+    
     for (int i = 0; i < n; i++) {
         matriz[i] = malloc(n * sizeof(int));
         if (!matriz[i]) {
-            for (int k = 0; k < i; k++) free(matriz[k]);
+            for (int j = 0; j < i; j++) free(matriz[j]);
             free(matriz);
             return NULL;
         }
@@ -76,6 +100,7 @@ int **criar_matriz(int n) {
     return matriz;
 }
 
+// [2] Escolhe cor baseada no valor
 const char* cor_valor(int valor) {
     if (valor == 2) return VERMELHO;
     if (valor == 4) return VERDE;
@@ -83,73 +108,144 @@ const char* cor_valor(int valor) {
     if (valor == 16) return AZUL;
     if (valor == 32) return MAGENTA;
     if (valor == 64) return CIANA;
-    return NEGRITO;
+    if (valor == 128) return NEGRITO VERMELHO;
+    if (valor == 256) return NEGRITO VERDE;
+    if (valor == 512) return NEGRITO AMARELO;
+    if (valor == 1024) return NEGRITO AZUL;
+    if (valor == 2048) return NEGRITO MAGENTA;
+    return NEGRITO CIANA;
 }
 
+// [3] Imprime o tabuleiro do jogo
 void imprimir_matriz(Jogo *jogo) {
     int tamanho = jogo->tamanho_tab;
-    int largura_total = 60;
-
-    // Cabeçalho simples
+    
+    // Cabeçalho
     printf("\n");
-    printf(CIANA "╔══════════════════════════════════════════════╗\n" RESET);
-    printf(CIANA "║" AMARELO "               🎮 JOGO 2048 🎮               " CIANA "║\n" RESET);
-    printf(CIANA "╠══════════════════════════════════════════════╣\n" RESET);
+    desenhar_linha(60, '╔', '╗', '═');
     
-    // Informações em linhas separadas
-    printf(CIANA "║" VERDE " Jogador: %-30s " CIANA "║\n" RESET, jogo->nome);
-    printf(CIANA "║" AZUL " Pontos: %-4d " MAGENTA "Trocas: %-2d " VERMELHO "Desfazer: %-2d " CIANA "║\n" RESET,
-           jogo->pontos, jogo->trocas_restantes, jogo->desfazer_restantes);
+    char info[100];
+    snprintf(info, sizeof(info), "Jogador: %s | Pontos: %d | Trocas: %d | Desfazer: %d",
+             jogo->nome, jogo->pontos, jogo->trocas_restantes, jogo->desfazer_restantes);
+    desenhar_texto_centralizado(60, info, VERDE);
     
-    printf(CIANA "╚══════════════════════════════════════════════╝\n" RESET);
+    desenhar_linha(60, '╚', '╝', '═');
     printf("\n");
 
-    // ... o resto do código do tabuleiro permanece igual ...
-    // [insira aqui o código do tabuleiro que já estava funcionando]
+    // Encontra maior valor para ajustar tamanho da célula
+    int maior_valor = 0;
+    for (int i = 0; i < tamanho; i++) {
+        for (int j = 0; j < tamanho; j++) {
+            if (jogo->matriz_tab[i][j] > maior_valor) {
+                maior_valor = jogo->matriz_tab[i][j];
+            }
+        }
+    }
+    
+    int tamanho_celula = 6;
+    if (maior_valor >= 1000) tamanho_celula = 8;
+    else if (maior_valor >= 100) tamanho_celula = 7;
+
+    // Imprime números das colunas
+    printf("     ");
+    for (int j = 0; j < tamanho; j++) {
+        printf(AZUL " %*d " RESET, tamanho_celula, j + 1);
+    }
+    printf("\n");
+
+    // Borda superior
+    printf("   ┏");
+    for (int j = 0; j < tamanho; j++) {
+        for (int k = 0; k < tamanho_celula; k++) printf("━");
+        if (j < tamanho - 1) printf("┳");
+    }
+    printf("┓\n");
+
+    // Imprime cada linha do tabuleiro
+    for (int i = 0; i < tamanho; i++) {
+        printf(VERDE "%c  " RESET, 'A' + i);
+        printf("┃");
+        
+        for (int j = 0; j < tamanho; j++) {
+            int valor = jogo->matriz_tab[i][j];
+            
+            if (valor != 0) {
+                const char* cor = cor_valor(valor);
+                printf("%s%*d%s", cor, tamanho_celula, valor, RESET);
+            } else {
+                printf("%*s", tamanho_celula, " ");
+            }
+            printf("┃");
+        }
+        printf("\n");
+
+        // Bordas entre linhas
+        if (i < tamanho - 1) {
+            printf("   ┣");
+            for (int j = 0; j < tamanho; j++) {
+                for (int k = 0; k < tamanho_celula; k++) printf("━");
+                if (j < tamanho - 1) printf("╋");
+            }
+            printf("┫\n");
+        } else {
+            printf("   ┗");
+            for (int j = 0; j < tamanho; j++) {
+                for (int k = 0; k < tamanho_celula; k++) printf("━");
+                if (j < tamanho - 1) printf("┻");
+            }
+            printf("┛\n");
+        }
+    }
+    
+    printf("\n");
+    
+    // Legenda de comandos
+    printf(AMARELO "Comandos: W (Cima) A (Esquerda) S (Baixo) D (Direita)\n" RESET);
+    printf(AMARELO "U (Desfazer) T (Trocar) VOLTAR (Menu)\n" RESET);
+    printf("\n");
 }
 
-void n_aleatorio(Jogo *jogo_atual) {
-    int n = jogo_atual->tamanho_tab;
-    int pecas;
+// [4] Adiciona números aleatórios no tabuleiro
+void n_aleatorio(Jogo *jogo) {
+    int tamanho = jogo->tamanho_tab;
+    int quantidade = (tamanho == 6) ? 2 : 1;
 
-    if (n == 6) pecas = 2;
-    else pecas = 1;
-
-    for (int p = 0; p < pecas; p++) {
+    for (int p = 0; p < quantidade; p++) {
         int valor;
-        int prob = rand() % 100;
+        int probabilidade = rand() % 100;
 
-        if (n == 4) {
-            if (prob < 90) valor = 2;
-            else valor = 4;
-        } else if (n == 5) {
-            if (prob < 85) valor = 2;
-            else valor = 4;
+        // Define probabilidades baseadas no tamanho
+        if (tamanho == 4) {
+            valor = (probabilidade < 90) ? 2 : 4;
+        } else if (tamanho == 5) {
+            valor = (probabilidade < 85) ? 2 : 4;
         } else {
-            if (prob < 80) valor = 2;
-            else valor = 4;
+            valor = (probabilidade < 80) ? 2 : 4;
         }
 
-        int posicoes_vazias = 0;
-        for (int i = 0; i < n; i++) {
-            for (int j = 0; j < n; j++) {
-                if (jogo_atual->matriz_tab[i][j] == 0) {
-                    posicoes_vazias++;
+        // Conta posições vazias
+        int vazios = 0;
+        for (int i = 0; i < tamanho; i++) {
+            for (int j = 0; j < tamanho; j++) {
+                if (jogo->matriz_tab[i][j] == 0) {
+                    vazios++;
                 }
             }
         }
         
-        if (posicoes_vazias == 0) return;
+        if (vazios == 0) return;
         
-        int pos_aleatoria = rand() % posicoes_vazias;
+        // Escolhe posição aleatória
+        int posicao = rand() % vazios;
         int contador = 0;
         
-        for (int i = 0; i < n; i++) {
-            for (int j = 0; j < n; j++) {
-                if (jogo_atual->matriz_tab[i][j] == 0) {
-                    if (contador == pos_aleatoria) {
-                        jogo_atual->matriz_tab[i][j] = valor;
-                        break;
+        // Coloca o número na posição escolhida
+        for (int i = 0; i < tamanho; i++) {
+            for (int j = 0; j < tamanho; j++) {
+                if (jogo->matriz_tab[i][j] == 0) {
+                    if (contador == posicao) {
+                        jogo->matriz_tab[i][j] = valor;
+                        return;
                     }
                     contador++;
                 }
@@ -158,12 +254,14 @@ void n_aleatorio(Jogo *jogo_atual) {
     }
 }
 
+// [5] Libera memória da matriz
 void liberar_matriz(int **matriz, int n) {
     if (!matriz) return;
     for (int i = 0; i < n; i++) free(matriz[i]);
     free(matriz);
 }
 
+// [6] Cria cópia da matriz
 int **copiar_matriz(int **matriz, int tamanho) {
     if (!matriz) return NULL;
     
@@ -179,16 +277,15 @@ int **copiar_matriz(int **matriz, int tamanho) {
 }
 
 // ==================== MOVIMENTAÇÃO ====================
-void movimento_nao_guloso(int *linha, int tamanho, int *pontuacao, int *houve_movimento) {
-    int combinada[tamanho];
+
+// [7] Move e combina números em uma linha
+void movimento_linha(int *linha, int tamanho, int *pontos, int *movimento) {
+    int combinou[tamanho];
+    for (int i = 0; i < tamanho; i++) combinou[i] = 0;
     
-    for (int i = 0; i < tamanho; i++) {
-        combinada[i] = 0;
-    }
+    *movimento = 0;
     
-    *houve_movimento = 0;
-    
-    // Primeiro empurra
+    // Primeiro empurra para esquerda
     for (int i = 0; i < tamanho; i++) {
         if (linha[i] != 0) {
             int k = i;
@@ -196,24 +293,23 @@ void movimento_nao_guloso(int *linha, int tamanho, int *pontuacao, int *houve_mo
                 linha[k-1] = linha[k];
                 linha[k] = 0;
                 k--;
-                *houve_movimento = 1;
+                *movimento = 1;
             }
         }
     }
     
-    // Combina números iguais (não-guloso)
+    // Combina números iguais
     for (int i = 0; i < tamanho - 1; i++) {
-        if (linha[i] != 0 && linha[i] == linha[i+1] && !combinada[i]) {
+        if (linha[i] != 0 && linha[i] == linha[i+1] && !combinou[i]) {
             linha[i] *= 2;
             linha[i+1] = 0;
-            *pontuacao += linha[i];
-            combinada[i] = 1;
-            *houve_movimento = 1;
-            combinada[i+1] = 1;
+            *pontos += linha[i];
+            combinou[i] = 1;
+            *movimento = 1;
         }
     }
     
-    // Segundo empurra
+    // Empurra novamente após combinar
     for (int i = 0; i < tamanho; i++) {
         if (linha[i] != 0) {
             int k = i;
@@ -221,245 +317,194 @@ void movimento_nao_guloso(int *linha, int tamanho, int *pontuacao, int *houve_mo
                 linha[k-1] = linha[k];
                 linha[k] = 0;
                 k--;
-                *houve_movimento = 1;
+                *movimento = 1;
             }
         }
     }
 }
 
-int mover_esquerda(Jogo *jogo){
-    int n = jogo->tamanho_tab;
+// [8] Move todo o tabuleiro para esquerda
+int mover_esquerda(Jogo *jogo) {
     int movimento = 0;
-
-    for(int i = 0; i < n; i++){
-        int houve_movimento = 0;
+    int n = jogo->tamanho_tab;
+    
+    for (int i = 0; i < n; i++) {
         int linha[n];
-
-        for(int j = 0; j < n; j++)
-            linha[j] = jogo->matriz_tab[i][j];
-
-        movimento_nao_guloso(linha, n, &(jogo->pontos), &houve_movimento);
-
-        for(int j = 0; j < n; j++)
-            jogo->matriz_tab[i][j] = linha[j];
-
-        if(houve_movimento) movimento = 1;
+        int moveu = 0;
+        
+        for (int j = 0; j < n; j++) linha[j] = jogo->matriz_tab[i][j];
+        movimento_linha(linha, n, &jogo->pontos, &moveu);
+        for (int j = 0; j < n; j++) jogo->matriz_tab[i][j] = linha[j];
+        
+        if (moveu) movimento = 1;
     }
     return movimento;
 }
 
-int mover_direita(Jogo *jogo){
-    int n = jogo->tamanho_tab;
+// [9] Move todo o tabuleiro para direita
+int mover_direita(Jogo *jogo) {
     int movimento = 0;
-
-    for(int i = 0; i < n; i++){
-        int houve_movimento = 0;
+    int n = jogo->tamanho_tab;
+    
+    for (int i = 0; i < n; i++) {
         int linha[n];
-
-        for(int j = 0; j < n; j++)
-            linha[j] = jogo->matriz_tab[i][n-1-j];
-
-        movimento_nao_guloso(linha, n, &(jogo->pontos), &houve_movimento);
-
-        for(int j = 0; j < n; j++)
-            jogo->matriz_tab[i][n-1-j] = linha[j];
-
-        if(houve_movimento) movimento = 1;
+        int moveu = 0;
+        
+        for (int j = 0; j < n; j++) linha[j] = jogo->matriz_tab[i][n-1-j];
+        movimento_linha(linha, n, &jogo->pontos, &moveu);
+        for (int j = 0; j < n; j++) jogo->matriz_tab[i][n-1-j] = linha[j];
+        
+        if (moveu) movimento = 1;
     }
     return movimento;
 }
 
-int mover_cima(Jogo *jogo){
-    int n = jogo->tamanho_tab;
+// [10] Move todo o tabuleiro para cima
+int mover_cima(Jogo *jogo) {
     int movimento = 0;
-
-    for(int j = 0; j < n; j++){
-        int houve_movimento = 0;
+    int n = jogo->tamanho_tab;
+    
+    for (int j = 0; j < n; j++) {
         int coluna[n];
-
-        for(int i = 0; i < n; i++)
-            coluna[i] = jogo->matriz_tab[i][j];
-
-        movimento_nao_guloso(coluna, n, &(jogo->pontos), &houve_movimento);
-
-        for(int i = 0; i < n; i++)
-            jogo->matriz_tab[i][j] = coluna[i];
-
-        if(houve_movimento) movimento = 1;
+        int moveu = 0;
+        
+        for (int i = 0; i < n; i++) coluna[i] = jogo->matriz_tab[i][j];
+        movimento_linha(coluna, n, &jogo->pontos, &moveu);
+        for (int i = 0; i < n; i++) jogo->matriz_tab[i][j] = coluna[i];
+        
+        if (moveu) movimento = 1;
     }
     return movimento;
 }
 
-int mover_baixo(Jogo *jogo){
-    int n = jogo->tamanho_tab;
+// [11] Move todo o tabuleiro para baixo
+int mover_baixo(Jogo *jogo) {
     int movimento = 0;
-
-    for(int j = 0; j < n; j++){
-        int houve_movimento = 0;
+    int n = jogo->tamanho_tab;
+    
+    for (int j = 0; j < n; j++) {
         int coluna[n];
-
-        for(int i = 0; i < n; i++)
-            coluna[i] = jogo->matriz_tab[n-1-i][j];
-
-        movimento_nao_guloso(coluna, n, &(jogo->pontos), &houve_movimento);
-
-        for(int i = 0; i < n; i++)
-            jogo->matriz_tab[n-1-i][j] = coluna[i];
-
-        if(houve_movimento) movimento = 1;
+        int moveu = 0;
+        
+        for (int i = 0; i < n; i++) coluna[i] = jogo->matriz_tab[n-1-i][j];
+        movimento_linha(coluna, n, &jogo->pontos, &moveu);
+        for (int i = 0; i < n; i++) jogo->matriz_tab[n-1-i][j] = coluna[i];
+        
+        if (moveu) movimento = 1;
     }
     return movimento;
 }
 
 // ==================== DESFAZER / TROCAR ====================
+
+// [12] Desfaz o último movimento
 void desfazer_movimento(Jogo *jogo) {
     if (jogo->desfazer_restantes <= 0) {
-        printf(VERMELHO "\n Sem chances de desfazer! ❌\n" RESET);
+        printf(VERMELHO "Sem chances de desfazer!\n" RESET);
         return;
     }
 
     if (!jogo->tab_anterior) {
-        printf(VERMELHO "\n Nada para desfazer! ❌\n" RESET);
+        printf(VERMELHO "Nada para desfazer!\n" RESET);
         return;
     }
 
     // Restaura o tabuleiro anterior
-    for (int linha = 0; linha < jogo->tamanho_tab; linha++) {
-        for (int coluna = 0; coluna < jogo->tamanho_tab; coluna++) {
-            jogo->matriz_tab[linha][coluna] = jogo->tab_anterior[linha][coluna];
+    for (int i = 0; i < jogo->tamanho_tab; i++) {
+        for (int j = 0; j < jogo->tamanho_tab; j++) {
+            jogo->matriz_tab[i][j] = jogo->tab_anterior[i][j];
         }
     }
 
     jogo->pontos = jogo->pontos_anterior;
     jogo->desfazer_restantes--;
     
-    printf(VERDE "\n Movimento desfeito! ↩️\n" RESET);
-    printf(AZUL " Chances restantes: %d\n" RESET, jogo->desfazer_restantes);
+    printf(VERDE "Movimento desfeito! Restam %d chances\n" RESET, jogo->desfazer_restantes);
 }
 
+// [13] Troca duas peças de posição
 void trocar_pecas(Jogo *jogo) {
     if (jogo->trocas_restantes <= 0) {
-        printf(VERMELHO "\n Sem chances de trocar! ❌\n" RESET);
+        printf(VERMELHO "Sem chances de trocar!\n" RESET);
         return;
     }
 
-    char posicao1[10], posicao2[10];
+    char pos1[3], pos2[3];
     int linha1, coluna1, linha2, coluna2;
 
-    printf(AMARELO "\n Primeira posição (ex: A1): " RESET);
-    if (scanf("%9s", posicao1) != 1) {
-        limpar_buffer();
-        printf(VERMELHO "\n Entrada inválida!\n" RESET);
-        return;
-    }
-
-    printf(AMARELO " Segunda posição (ex: B2): " RESET);
-    if (scanf("%9s", posicao2) != 1) {
-        limpar_buffer();
-        printf(VERMELHO "\n Entrada inválida!\n" RESET);
-        return;
-    }
+    printf(AMARELO "Primeira posição (ex: A1): " RESET);
+    scanf("%2s", pos1);
+    printf(AMARELO "Segunda posição (ex: B2): " RESET);
+    scanf("%2s", pos2);
     limpar_buffer();
 
-    // Valida formato das posições
-    if (strlen(posicao1) != 2 || strlen(posicao2) != 2 ||
-        !isalpha(posicao1[0]) || !isdigit(posicao1[1]) ||
-        !isalpha(posicao2[0]) || !isdigit(posicao2[1])) {
-        printf(VERMELHO "\n Formato inválido! Use formato LetraNúmero (ex: A1)\n" RESET);
+    // Converte para coordenadas
+    linha1 = toupper(pos1[0]) - 'A';
+    coluna1 = pos1[1] - '1';
+    linha2 = toupper(pos2[0]) - 'A';
+    coluna2 = pos2[1] - '1';
+
+    // Valida as posições
+    if (linha1 < 0 || linha1 >= jogo->tamanho_tab || coluna1 < 0 || coluna1 >= jogo->tamanho_tab ||
+        linha2 < 0 || linha2 >= jogo->tamanho_tab || coluna2 < 0 || coluna2 >= jogo->tamanho_tab) {
+        printf(VERMELHO "Posições inválidas!\n" RESET);
         return;
     }
 
-    // Converte letras para números
-    linha1 = toupper(posicao1[0]) - 'A';
-    coluna1 = posicao1[1] - '1';
-    linha2 = toupper(posicao2[0]) - 'A';
-    coluna2 = posicao2[1] - '1';
-
-    // Verifica se as posições são válidas
-    if (linha1 < 0 || linha1 >= jogo->tamanho_tab || linha2 < 0 || linha2 >= jogo->tamanho_tab ||
-        coluna1 < 0 || coluna1 >= jogo->tamanho_tab || coluna2 < 0 || coluna2 >= jogo->tamanho_tab) {
-        printf(VERMELHO "\n Posições fora do tabuleiro! ❌\n" RESET);
-        return;
-    }
-
-    // Verifica se as posições não estão vazias
     if (jogo->matriz_tab[linha1][coluna1] == 0 || jogo->matriz_tab[linha2][coluna2] == 0) {
-        printf(VERMELHO "\n Não é possível trocar posições vazias! ❌\n" RESET);
+        printf(VERMELHO "Não pode trocar posições vazias!\n" RESET);
         return;
     }
 
-    // Troca as peças
+    // Faz a troca
     int temp = jogo->matriz_tab[linha1][coluna1];
     jogo->matriz_tab[linha1][coluna1] = jogo->matriz_tab[linha2][coluna2];
     jogo->matriz_tab[linha2][coluna2] = temp;
 
     jogo->trocas_restantes--;
     
-    printf(VERDE "\n Peças trocadas com sucesso! 🔄\n" RESET);
-    printf(AZUL " Trocas restantes: %d\n" RESET, jogo->trocas_restantes);
+    printf(VERDE "Peças trocadas! Restam %d trocas\n" RESET, jogo->trocas_restantes);
 }
 
-void verificar_ganho_movimentos_especiais(Jogo *jogo) {
+// ==================== VERIFICAÇÕES ====================
+
+// [14] Verifica se ainda há jogadas possíveis
+int verificar_jogo(Jogo *jogo) {
+    int n = jogo->tamanho_tab;
+    
+    // Verifica se há espaços vazios
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            if (jogo->matriz_tab[i][j] == 0) {
+                return 1;
+            }
+        }
+    }
+    
+    // Verifica se há combinações possíveis
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            if (j < n-1 && jogo->matriz_tab[i][j] == jogo->matriz_tab[i][j+1]) {
+                return 1;
+            }
+            if (i < n-1 && jogo->matriz_tab[i][j] == jogo->matriz_tab[i+1][j]) {
+                return 1;
+            }
+        }
+    }
+    
+    return 0;
+}
+
+// [15] Verifica se o jogador venceu
+int verificar_vitoria(Jogo *jogo) {
     int n = jogo->tamanho_tab;
     
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
-            if (jogo->matriz_tab[i][j] == 256) {
-                jogo->desfazer_restantes++;
-                printf("Parabéns! Você ganhou uma chance de desfazer por atingir 256!\n");
-            }
-            if (jogo->matriz_tab[i][j] == 512) {
-                jogo->trocas_restantes++;
-                printf("Parabéns! Você ganhou uma chance de trocar por atingir 512!\n");
-            }
-        }
-    }
-}
-
-// ==================== VERIFICAÇÕES ====================
-// Adicione estas funções no final do funcoes.c
-
-int verificar_jogo(Jogo *jogo) {
-    int tamanho = jogo->tamanho_tab;
-    
-    // Verifica se há espaços vazios
-    for (int linha = 0; linha < tamanho; linha++) {
-        for (int coluna = 0; coluna < tamanho; coluna++) {
-            if (jogo->matriz_tab[linha][coluna] == 0) {
-                return 1; // Ainda há espaços vazios
-            }
-        }
-    }
-    
-    // Verifica se há movimentos possíveis
-    for (int linha = 0; linha < tamanho; linha++) {
-        for (int coluna = 0; coluna < tamanho; coluna++) {
-            // Verifica direita
-            if (coluna < tamanho - 1 && jogo->matriz_tab[linha][coluna] == jogo->matriz_tab[linha][coluna + 1]) {
-                return 1;
-            }
-            // Verifica baixo
-            if (linha < tamanho - 1 && jogo->matriz_tab[linha][coluna] == jogo->matriz_tab[linha + 1][coluna]) {
-                return 1;
-            }
-        }
-    }
-    
-    return 0; // Não há mais movimentos
-}
-
-int verificar_vitoria(Jogo *jogo) {
-    int tamanho = jogo->tamanho_tab;
-    
-    for (int linha = 0; linha < tamanho; linha++) {
-        for (int coluna = 0; coluna < tamanho; coluna++) {
-            if (jogo->matriz_tab[linha][coluna] == 2048) {
-                printf(CIANA "\n╔══════════════════════════════════════════════╗\n" RESET);
-                printf(CIANA "║" AMARELO "           🎉 PARABÉNS %s! 🎉           " CIANA "║\n" RESET, jogo->nome);
-                printf(CIANA "║" VERDE "        Você atingiu 2048! 🏆         " CIANA "║\n" RESET);
-                printf(CIANA "╚══════════════════════════════════════════════╝\n" RESET);
-                
-                printf(AMARELO "\n Deseja continuar jogando? (S/N): " RESET);
+            if (jogo->matriz_tab[i][j] == 2048) {
+                printf(VERDE "\nParabéns %s! Você atingiu 2048!\n" RESET, jogo->nome);
+                printf(AMARELO "Deseja continuar jogando? (S/N): " RESET);
                 
                 char opcao;
                 do {
@@ -469,14 +514,8 @@ int verificar_vitoria(Jogo *jogo) {
                 } while (opcao != 'S' && opcao != 'N');
                 
                 if (opcao == 'N') {
-                    printf(VERDE "\n Obrigado por jogar! 👋\n" RESET);
                     return 0;
                 }
-                
-                printf(VERDE "\n Continuando o jogo... 🎮\n" RESET);
-                printf(AMARELO " Pressione ENTER para continuar..." RESET);
-                getchar();
-                
                 return 1;
             }
         }
@@ -484,31 +523,24 @@ int verificar_vitoria(Jogo *jogo) {
     return 2;
 }
 
+// [16] Verifica se o jogador perdeu
 int verificar_derrota(Jogo *jogo) {
     if (verificar_jogo(jogo)) return 1;
 
-    printf(CIANA "\n╔══════════════════════════════════════════════╗\n" RESET);
-    printf(CIANA "║" VERMELHO "           ⚠️  GAME OVER! ⚠️           " CIANA "║\n" RESET);
-    printf(CIANA "║" VERMELHO "   Não há mais movimentos possíveis   " CIANA "║\n" RESET);
-    printf(CIANA "╚══════════════════════════════════════════════╝\n" RESET);
+    printf(VERMELHO "\nGame Over! Sem movimentos possíveis.\n" RESET);
     
     if (jogo->desfazer_restantes > 0) {
-        printf(AMARELO "\n Deseja usar DESFAZER? Você tem %d chances. (S/N): " RESET, jogo->desfazer_restantes);
+        printf(AMARELO "Deseja usar desfazer? (%d restantes) (S/N): " RESET, jogo->desfazer_restantes);
         char opcao;
         scanf(" %c", &opcao);
         limpar_buffer();
         
         if (toupper(opcao) == 'S') {
             desfazer_movimento(jogo);
-            printf(AMARELO " Pressione ENTER para continuar..." RESET);
-            getchar();
             return 2;
         }
     }
     
-    printf(VERDE "\n Voltando ao menu principal... 🏠\n" RESET);
-    printf(AMARELO " Pressione ENTER para continuar..." RESET);
-    getchar();
-    
+    printf(VERDE "Voltando ao menu...\n" RESET);
     return 0;
 }
